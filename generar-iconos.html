@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generar iconos PWA</title></head>
+<body style="background:#111;color:#fff;font-family:sans-serif;padding:20px;">
+<h2>Generador de íconos para Caja Gasolinera</h2>
+<p>Haz clic en cada botón para descargar el ícono correspondiente.</p>
+<br>
+<button onclick="generar(192)" style="padding:12px 24px;font-size:16px;margin-right:10px;cursor:pointer;">Descargar icon-192.png</button>
+<button onclick="generar(512)" style="padding:12px 24px;font-size:16px;cursor:pointer;">Descargar icon-512.png</button>
+<br><br>
+<canvas id="c" style="border:1px solid #333;"></canvas>
+<script>
+function generar(size) {
+  const canvas = document.getElementById('c');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // Fondo oscuro
+  ctx.fillStyle = '#0d0d0d';
+  ctx.beginPath();
+  const r = size * 0.18;
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Círculo naranja
+  ctx.fillStyle = '#f5a623';
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size * 0.35, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Letra S/ en negro
+  ctx.fillStyle = '#000';
+  ctx.font = `900 ${size * 0.28}px Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('S/', size/2, size/2);
+
+  // Descargar
+  const a = document.createElement('a');
+  a.download = `icon-${size}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>

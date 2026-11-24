@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Caja Gasolinera</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f5;
+  --bg2:#ffffff;
+  --bg3:#e4e8ef;
+  --border:#c8cdd6;
+  --text:#0a0a0a;
+  --text-dim:#555;
+  --accent:#d6820a;
+  --accent-btn:#c47a09;
+  --accent2:#1e8c2f;
+  --danger:#c62828;
+  --yape:#4527a0;
+  --boveda:#01579b;
+  --tab-h:60px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
+
+/* HEADER */
+#header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--bg2);border-bottom:2px solid var(--border)}
+#header-main{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 14px 6px}
+#header-left{flex:1;min-width:0}
+#header-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim)}
+#efectivo-display{font-size:40px;font-weight:900;color:#c47000;letter-spacing:-1px;line-height:1;padding:2px 0 2px}
+#turno-inicio{font-size:10px;color:var(--text-dim);margin-top:1px}
+#toggle-details{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:20px;padding:6px 11px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:4px}
+#details-panel{display:none;padding:0 14px 10px;gap:8px;grid-template-columns:1fr 1fr 1fr}
+#details-panel.open{display:grid}
+.detail-card{background:var(--bg3);border-radius:10px;padding:8px 10px;text-align:center}
+.dc-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:2px}
+.dc-val{font-size:14px;font-weight:800}
+.dc-yape{color:#4527a0}.dc-bov{color:#01579b}.dc-vend{color:#1e6b2e}
+
+/* BOTONES PANEL */
+#panel-btns{display:flex;gap:8px;padding:0 14px 10px}
+.panel-btn{flex:1;height:40px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.3px;transition:opacity 0.1s}
+.panel-btn:active{opacity:0.75}
+#btn-nuevo-turno{background:#c62828;color:#fff}
+#btn-reporte{background:#01579b;color:#fff}
+
+/* SCREENS */
+#screens{position:fixed;left:0;right:0;bottom:var(--tab-h);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.screen{display:none;padding:14px 14px 80px}
+.screen.active{display:block}
+#screen-vuelto{display:none;padding:14px 14px 80px}
+#screen-vuelto.active{display:block}
+
+/* TAB BAR */
+#tabbar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--bg2);border-top:2px solid var(--border);display:flex;z-index:100}
+.tab-btn{flex:1;background:none;border:none;color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding-bottom:4px}
+.tab-btn .tab-icon{font-size:20px}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.tab-yape.active{color:var(--yape)}
+.tab-btn.tab-boveda.active{color:var(--boveda)}
+
+/* FAB */
+#fab{position:fixed;bottom:70px;right:14px;z-index:200;width:68px;height:68px;border-radius:50%;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 4px 18px rgba(0,0,0,0.25);font-weight:900;font-size:9px;letter-spacing:0.4px;text-transform:uppercase;color:#fff;transition:background 0.2s,transform 0.1s;text-align:center;padding:6px}
+#fab:active{transform:scale(0.93)}
+#fab.mode-vuelto{background:var(--accent)}
+#fab.mode-volver{background:var(--accent2)}
+#fab .fab-icon{font-size:22px;line-height:1}
+
+/* COMPONENTES */
+.section-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px}
+.btn-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.btn-quick{flex:1;min-width:52px;height:54px;border-radius:12px;border:2px solid var(--border);background:#fff;color:var(--text);font-size:16px;font-weight:800;cursor:pointer;transition:background 0.1s,transform 0.1s;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+.btn-quick:active{background:var(--bg3);transform:scale(0.95)}
+.btn-quick.yape-color{background:var(--yape);color:#fff;border-color:#311a7a}
+.btn-quick.boveda-color{background:var(--boveda);color:#fff;border-color:#013f72}
+
+.input-row{display:flex;gap:7px;margin-bottom:9px;align-items:stretch}
+.num-input{flex:1;min-width:0;width:0;height:52px;border-radius:12px;border:2px solid var(--border);background:#fff;color:var(--text);font-size:18px;font-weight:700;padding:0 12px;outline:none;-webkit-appearance:none}
+.num-input:focus{border-color:var(--accent)}
+.num-input::placeholder{color:var(--text-dim);font-size:14px}
+
+.btn-action{height:52px;min-width:76px;max-width:88px;flex-shrink:0;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:900;cursor:pointer;padding:0 10px;transition:transform 0.1s;white-space:nowrap}
+.btn-action:active{transform:scale(0.95)}
+.btn-action.secondary{background:var(--bg3);color:var(--text);border:2px solid var(--border)}
+.btn-action.yape{background:var(--yape);color:#fff}
+.btn-action.boveda{background:var(--boveda);color:#fff}
+
+.btn-undo{width:100%;height:50px;border-radius:12px;border:2px solid var(--danger);background:transparent;color:var(--danger);font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:9px;transition:background 0.15s}
+.btn-undo:active{background:rgba(198,40,40,0.1)}
+.btn-undo:disabled{opacity:0.3;cursor:not-allowed}
+
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0}
+
+/* HISTORIAL */
+.hist-toggle{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:7px 14px;font-size:12px;cursor:pointer;width:100%;text-align:left;margin-bottom:6px}
+#historial-list{display:none;max-height:200px;overflow-y:auto;border-radius:10px;border:1px solid var(--border);background:#fff}
+#historial-list.open{display:block}
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.hist-item:last-child{border-bottom:none}
+.hist-item .hi-label{color:var(--text-dim)}
+.hist-item .hi-val{font-weight:700}
+.hist-item .hi-val.pos{color:#1e6b2e}
+.hist-item .hi-val.neg{color:var(--danger)}
+.hist-item .hi-time{font-size:10px;color:var(--text-dim);margin-right:6px}
+
+/* YAPE */
+.f3-badge{background:var(--yape);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.f3-label{font-size:11px;color:#d1c4e9;letter-spacing:0.5px}
+.f3-count{font-size:40px;font-weight:900;color:#fff}
+.f3-sub{font-size:10px;color:#b39ddb}
+.yape-total-card{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;border:2px solid var(--border)}
+.ytc-label{font-size:11px;color:var(--text-dim)}
+.ytc-val{font-size:26px;font-weight:900;color:var(--yape)}
+
+/* BÓVEDA */
+.boveda-info{background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:12px;border:2px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.bi-label{font-size:11px;color:var(--text-dim)}
+.bi-val{font-size:26px;font-weight:900;color:var(--boveda)}
+.desglose-box{background:#fff;border-radius:12px;padding:14px 16px;border:2px solid var(--border)}
+.desglose-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}
+.desglose-row span:first-child{color:var(--text-dim)}
+.desglose-row span:last-child{font-weight:800}
+.desglose-total{border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between}
+.desglose-total span:first-child{font-size:13px;font-weight:700}
+.desglose-total span:last-child{font-weight:900;font-size:16px;color:var(--accent)}
+
+/* VUELTO */
+.consumo-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+#consumo-input{width:100%;height:62px;border-radius:14px;border:2px solid var(--border);background:#fff;color:var(--text);font-size:28px;font-weight:800;padding:0 16px;margin-bottom:10px;outline:none;-webkit-appearance:none}
+#consumo-input:focus{border-color:var(--accent)}
+#billete-input{flex:1;min-width:0;width:0;height:52px;border-radius:12px;border:2px solid var(--border);background:#fff;color:var(--text);font-size:18px;font-weight:700;padding:0 12px;outline:none;-webkit-appearance:none}
+#billete-input:focus{border-color:var(--accent)}
+#vuelto-result{margin-top:14px;border-radius:16px;background:#fff;border:2px solid var(--border);padding:18px 16px 14px;text-align:center;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#vuelto-label{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:3px}
+#vuelto-amount{font-size:52px;font-weight:900;color:var(--accent2);line-height:1}
+#vuelto-amount.negativo{color:var(--danger)}
+#vuelto-desglose{margin-top:8px;font-size:12px;color:var(--text-dim);text-align:center;line-height:1.6}
+.btn-clear-vuelto{width:100%;height:46px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;margin-top:9px}
+.btn-clear-vuelto:active{background:var(--bg3)}
+
+/* CONFIRM OVERLAY */
+#confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;align-items:center;justify-content:center}
+#confirm-overlay.open{display:flex}
+#confirm-box{background:#fff;border-radius:18px;padding:28px 24px;width:calc(100% - 48px);max-width:340px;text-align:center}
+#confirm-box h3{font-size:18px;font-weight:900;margin-bottom:8px;color:var(--text)}
+#confirm-box p{font-size:13px;color:var(--text-dim);margin-bottom:20px;line-height:1.5}
+#confirm-btns{display:flex;gap:10px}
+#confirm-btns button{flex:1;height:50px;border-radius:12px;border:none;font-size:15px;font-weight:800;cursor:pointer}
+#btn-confirm-yes{background:var(--danger);color:#fff}
+#btn-confirm-no{background:var(--bg3);color:var(--text);border:2px solid var(--border)}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+input{font-size:16px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-main">
+    <div id="header-left">
+      <div id="header-label">💵 Efectivo en caja</div>
+      <div id="efectivo-display">S/ 0.00</div>
+      <div id="turno-inicio">Turno iniciado: —</div>
+    </div>
+    <button id="toggle-details" onclick="toggleDetails()">▼ Ver más</button>
+  </div>
+  <div id="details-panel">
+    <div class="detail-card">
+      <div class="dc-label">Yape/Culqi</div>
+      <div class="dc-val dc-yape" id="hd-yape">S/ 0.00</div>
+    </div>
+    <div class="detail-card">
+      <div class="dc-label">Bóveda</div>
+      <div class="dc-val dc-bov" id="hd-boveda">S/ 0.00</div>
+    </div>
+    <div class="detail-card">
+      <div class="dc-label">Total vendido</div>
+      <div class="dc-val dc-vend" id="hd-total">S/ 0.00</div>
+    </div>
+    <div id="panel-btns" style="grid-column:1/-1;display:flex;gap:8px;padding:4px 0 0">
+      <button class="panel-btn" id="btn-reporte" onclick="generarReporte()">📄 Reporte</button>
+      <button class="panel-btn" id="btn-nuevo-turno" onclick="pedirNuevoTurno()">🔄 Nuevo turno</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREENS -->
+<div id="screens">
+
+  <!-- EFECTIVO -->
+  <div class="screen active" id="screen-efectivo">
+    <div class="section-title">Registrar cobro en efectivo</div>
+    <div class="btn-row">
+      <button class="btn-quick" onclick="addEfectivo(5)">+5</button>
+      <button class="btn-quick" onclick="addEfectivo(10)">+10</button>
+      <button class="btn-quick" onclick="addEfectivo(15)">+15</button>
+      <button class="btn-quick" onclick="addEfectivo(20)">+20</button>
+      <button class="btn-quick" onclick="addEfectivo(50)">+50</button>
+    </div>
+    <div class="input-row">
+      <input id="efectivo-input" class="num-input" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Monto exacto">
+      <button class="btn-action" onclick="sumarEfectivo()">Sumar</button>
+    </div>
+    <button class="btn-undo" id="btn-undo" onclick="undoLast()" disabled>↩ Deshacer último</button>
+    <hr class="divider">
+    <button class="hist-toggle" onclick="toggleHistorial()">📋 Historial del turno ▾</button>
+    <div id="historial-list"></div>
+  </div>
+
+  <!-- YAPE / CULQI -->
+  <div class="screen" id="screen-yape">
+    <div class="f3-badge">
+      <div>
+        <div class="f3-label">CIERRES F3 PENDIENTES</div>
+        <div class="f3-sub">en el POS</div>
+      </div>
+      <div class="f3-count" id="f3-count">0</div>
+    </div>
+    <div class="yape-total-card">
+      <div class="ytc-label">Total Yape / Culqi acumulado</div>
+      <div class="ytc-val" id="yape-total-display">S/ 0.00</div>
+    </div>
+    <div class="section-title">Registrar cobro digital</div>
+    <div class="input-row">
+      <input id="yape-input" class="num-input" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Monto Yape/Culqi">
+      <button class="btn-action yape" onclick="addYape()">Sumar</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-quick yape-color" onclick="addYapeQuick(20)">+20</button>
+      <button class="btn-quick yape-color" onclick="addYapeQuick(50)">+50</button>
+      <button class="btn-quick yape-color" onclick="addYapeQuick(100)">+100</button>
+      <button class="btn-quick yape-color" onclick="addYapeQuick(150)">+150</button>
+      <button class="btn-quick yape-color" onclick="addYapeQuick(200)">+200</button>
+    </div>
+    <button class="btn-undo" id="btn-undo-yape" onclick="undoYape()" disabled>↩ Deshacer último Yape</button>
+  </div>
+
+  <!-- BÓVEDA -->
+  <div class="screen" id="screen-boveda">
+    <div class="boveda-info">
+      <div class="bi-label">Total depositado a bóveda</div>
+      <div class="bi-val" id="boveda-total-display">S/ 0.00</div>
+    </div>
+    <div class="section-title">Registrar depósito a bóveda</div>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:9px;line-height:1.5">Escribe exactamente cuánto depositarás (solo billetes o solo monedas). El efectivo en caja se reducirá en ese monto.</p>
+    <div class="input-row">
+      <input id="boveda-input" class="num-input" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Monto a depositar">
+      <button class="btn-action boveda" onclick="addBoveda()">Depositar</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-quick boveda-color" onclick="addBovedaQuick(50)">+50</button>
+      <button class="btn-quick boveda-color" onclick="addBovedaQuick(100)">+100</button>
+      <button class="btn-quick boveda-color" onclick="addBovedaQuick(200)">+200</button>
+      <button class="btn-quick boveda-color" onclick="addBovedaQuick(500)">+500</button>
+    </div>
+    <button class="btn-undo" id="btn-undo-boveda" onclick="undoBoveda()" disabled>↩ Deshacer último depósito</button>
+    <hr class="divider">
+    <div class="desglose-box">
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.5px;text-transform:uppercase;font-weight:700">Desglose actual</div>
+      <div class="desglose-row"><span>Efectivo cobrado</span><span id="desg-cobrado">S/ 0.00</span></div>
+      <div class="desglose-row"><span>Depositado</span><span style="color:var(--boveda)" id="desg-depositado">– S/ 0.00</span></div>
+      <div class="desglose-total"><span>En caja ahora</span><span id="desg-caja">S/ 0.00</span></div>
+    </div>
+  </div>
+
+  <!-- VUELTO -->
+  <div id="screen-vuelto">
+    <div class="consumo-label">Monto de consumo / venta</div>
+    <input id="consumo-input" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0.00" oninput="calcularVuelto()">
+    <div class="section-title">Billete recibido</div>
+    <div class="btn-row">
+      <button class="btn-quick" id="bill-20" onclick="setBillete(20)">S/ 20</button>
+      <button class="btn-quick" id="bill-50" onclick="setBillete(50)">S/ 50</button>
+      <button class="btn-quick" id="bill-100" onclick="setBillete(100)">S/ 100</button>
+    </div>
+    <div class="input-row">
+      <input id="billete-input" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Otro billete" oninput="onBilleteManual()">
+      <button class="btn-action secondary" onclick="calcularVuelto()">Calcular</button>
+    </div>
+    <div id="vuelto-result">
+      <div id="vuelto-label">Ingresa monto y billete</div>
+      <div id="vuelto-amount"></div>
+      <div id="vuelto-desglose"></div>
+    </div>
+    <button class="btn-clear-vuelto" onclick="limpiarVuelto()">🗑 Limpiar</button>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<button id="fab" class="mode-vuelto" onclick="toggleVuelto()">
+  <span class="fab-icon">🔁</span>
+  <span id="fab-label">VUELTO</span>
+</button>
+
+<!-- TAB BAR -->
+<div id="tabbar">
+  <button class="tab-btn active" id="tab-efectivo" onclick="showTab('efectivo')">
+    <span class="tab-icon">💵</span><span>Efectivo</span>
+  </button>
+  <button class="tab-btn tab-yape" id="tab-yape" onclick="showTab('yape')">
+    <span class="tab-icon">📱</span><span>Yape/Culqi</span>
+  </button>
+  <button class="tab-btn tab-boveda" id="tab-boveda" onclick="showTab('boveda')">
+    <span class="tab-icon">🏦</span><span>Bóveda</span>
+  </button>
+</div>
+
+<!-- CONFIRM OVERLAY -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <h3 id="confirm-title">¿Seguro?</h3>
+    <p id="confirm-msg">Esta acción no se puede deshacer.</p>
+    <div id="confirm-btns">
+      <button id="btn-confirm-no" onclick="cerrarConfirm()">Cancelar</button>
+      <button id="btn-confirm-yes" onclick="confirmarAccion()">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════
+const STORAGE_KEY = 'caja_turno_v2';
+
+let state = {
+  efectivo: 0,
+  boveda: 0,
+  yape: 0,
+  f3Count: 0,
+  turnoInicio: null,
+  historial: [],
+  yapeHistorial: [],
+  bovedaHistorial: [],
+};
+
+// ═══════════════════════════════════
+// PERSISTENCIA
+// ═══════════════════════════════════
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = { ...state, ...parsed };
+    }
+  } catch(e) {}
+}
+
+function requestPersist() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist();
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════
+// FORMATO
+// ═══════════════════════════════════
+function fmt(n) {
+  return 'S/ ' + (Math.round(n * 100) / 100).toFixed(2);
+}
+
+function parseInput(str) {
+  if (!str || !str.trim()) return NaN;
+  const n = parseFloat(str.replace(',', '.').trim());
+  return isNaN(n) ? NaN : Math.round(n * 100) / 100;
+}
+
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+// ═══════════════════════════════════
+// HEADER HEIGHT
+// ═══════════════════════════════════
+function updateHeaderHeight() {
+  const h = document.getElementById('header').offsetHeight;
+  document.getElementById('screens').style.top = h + 'px';
+}
+
+// ═══════════════════════════════════
+// RENDER
+// ═══════════════════════════════════
+function render() {
+  const enCaja = Math.max(0, state.efectivo - state.boveda);
+
+  document.getElementById('efectivo-display').textContent = fmt(enCaja);
+  document.getElementById('turno-inicio').textContent = 'Turno iniciado: ' + fmtDateTime(state.turnoInicio);
+  document.getElementById('hd-yape').textContent   = fmt(state.yape);
+  document.getElementById('hd-boveda').textContent = fmt(state.boveda);
+  document.getElementById('hd-total').textContent  = fmt(state.efectivo + state.yape);
+
+  document.getElementById('yape-total-display').textContent = fmt(state.yape);
+  document.getElementById('f3-count').textContent = state.f3Count;
+
+  document.getElementById('boveda-total-display').textContent = fmt(state.boveda);
+  document.getElementById('desg-cobrado').textContent    = fmt(state.efectivo);
+  document.getElementById('desg-depositado').textContent = '– ' + fmt(state.boveda);
+  document.getElementById('desg-caja').textContent       = fmt(enCaja);
+
+  document.getElementById('btn-undo').disabled        = state.historial.length === 0;
+  document.getElementById('btn-undo-yape').disabled   = state.yapeHistorial.length === 0;
+  document.getElementById('btn-undo-boveda').disabled = state.bovedaHistorial.length === 0;
+
+  renderHistorial();
+  updateHeaderHeight();
+}
+
+function renderHistorial() {
+  const list = document.getElementById('historial-list');
+  if (!list.classList.contains('open')) return;
+  const all = [
+    ...state.historial.map(i => ({...i, _tipo:'ef'})),
+    ...state.yapeHistorial.map(i => ({...i, _tipo:'yp'})),
+    ...state.bovedaHistorial.map(i => ({...i, _tipo:'bv'}))
+  ].sort((a,b) => b.ts - a.ts);
+
+  if (all.length === 0) {
+    list.innerHTML = '<div class="hist-item"><span class="hi-label">Sin movimientos aún</span></div>';
+    return;
+  }
+  list.innerHTML = all.slice(0, 50).map(item => {
+    const sign = item.monto >= 0 ? '+' : '';
+    const cls  = item.monto >= 0 ? 'pos' : 'neg';
+    return `<div class="hist-item">
+      <span class="hi-time">${fmtTime(item.ts)}</span>
+      <span class="hi-label">${item.label}</span>
+      <span class="hi-val ${cls}">${sign}${fmt(item.monto)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════
+// EFECTIVO
+// ═══════════════════════════════════
+function addEfectivo(monto) {
+  state.efectivo = Math.round((state.efectivo + monto) * 100) / 100;
+  state.historial.push({ monto, label: 'Efectivo', ts: Date.now() });
+  saveState(); render(); pulse('efectivo-display');
+}
+
+function sumarEfectivo() {
+  const inp = document.getElementById('efectivo-input');
+  const n = parseInput(inp.value);
+  if (isNaN(n) || n <= 0) { shake(inp); return; }
+  addEfectivo(n);
+  inp.value = '';
+}
+
+function undoLast() {
+  if (!state.historial.length) return;
+  const last = state.historial.pop();
+  state.efectivo = Math.max(0, Math.round((state.efectivo - last.monto) * 100) / 100);
+  saveState(); render();
+}
+
+// ═══════════════════════════════════
+// YAPE / CULQI
+// ═══════════════════════════════════
+function addYapeAmount(n) {
+  state.yape = Math.round((state.yape + n) * 100) / 100;
+  state.f3Count++;
+  state.yapeHistorial.push({ monto: n, label: 'Yape/Culqi', ts: Date.now() });
+  saveState(); render(); pulse('yape-total-display');
+}
+
+function addYape() {
+  const inp = document.getElementById('yape-input');
+  const n = parseInput(inp.value);
+  if (isNaN(n) || n <= 0) { shake(inp); return; }
+  addYapeAmount(n);
+  inp.value = '';
+}
+
+function addYapeQuick(n) { addYapeAmount(n); }
+
+function undoYape() {
+  if (!state.yapeHistorial.length) return;
+  const last = state.yapeHistorial.pop();
+  state.yape = Math.max(0, Math.round((state.yape - last.monto) * 100) / 100);
+  if (state.f3Count > 0) state.f3Count--;
+  saveState(); render();
+}
+
+// ═══════════════════════════════════
+// BÓVEDA
+// ═══════════════════════════════════
+function addBovedaAmount(n) {
+  state.boveda = Math.round((state.boveda + n) * 100) / 100;
+  state.bovedaHistorial.push({ monto: n, label: 'Depósito bóveda', ts: Date.now() });
+  saveState(); render(); pulse('boveda-total-display');
+}
+
+function addBoveda() {
+  const inp = document.getElementById('boveda-input');
+  const n = parseInput(inp.value);
+  if (isNaN(n) || n <= 0) { shake(inp); return; }
+  addBovedaAmount(n);
+  inp.value = '';
+}
+
+function addBovedaQuick(n) { addBovedaAmount(n); }
+
+function undoBoveda() {
+  if (!state.bovedaHistorial.length) return;
+  const last = state.bovedaHistorial.pop();
+  state.boveda = Math.max(0, Math.round((state.boveda - last.monto) * 100) / 100);
+  saveState(); render();
+}
+
+// ═══════════════════════════════════
+// CALCULADOR VUELTO
+// ═══════════════════════════════════
+let billeteActivo = null;
+
+function setBillete(val) {
+  billeteActivo = val;
+  document.getElementById('billete-input').value = '';
+  [20,50,100].forEach(v => {
+    const b = document.getElementById('bill-'+v);
+    if (b) {
+      b.style.background = v === val ? 'var(--accent)' : '';
+      b.style.color      = v === val ? '#fff' : '';
+      b.style.borderColor= v === val ? 'var(--accent-btn)' : '';
+    }
+  });
+  calcularVuelto();
+}
+
+function onBilleteManual() {
+  billeteActivo = null;
+  [20,50,100].forEach(v => {
+    const b = document.getElementById('bill-'+v);
+    if (b) { b.style.background=''; b.style.color=''; b.style.borderColor=''; }
+  });
+  calcularVuelto();
+}
+
+function calcularVuelto() {
+  const consumo = parseInput(document.getElementById('consumo-input').value);
+  const billeteManual = parseInput(document.getElementById('billete-input').value);
+  const billete = (!isNaN(billeteManual) && billeteManual > 0) ? billeteManual : billeteActivo;
+
+  const lbl  = document.getElementById('vuelto-label');
+  const amt  = document.getElementById('vuelto-amount');
+  const desg = document.getElementById('vuelto-desglose');
+
+  if (isNaN(consumo) || consumo <= 0) {
+    lbl.textContent='Ingresa el monto de consumo'; amt.textContent=''; desg.textContent=''; return;
+  }
+  if (!billete || billete <= 0) {
+    lbl.textContent='Selecciona o escribe el billete'; amt.textContent=''; desg.textContent=''; return;
+  }
+
+  const vuelto = Math.round((billete - consumo) * 100) / 100;
+  lbl.textContent = 'VUELTO';
+  amt.textContent = fmt(vuelto);
+
+  if (vuelto < 0) {
+    amt.classList.add('negativo');
+    desg.textContent = '⚠️ El billete no alcanza.';
+    return;
+  }
+  amt.classList.remove('negativo');
+  desg.textContent = vuelto === 0 ? '✅ Monto exacto.' : desglose(vuelto);
+}
+
+function desglose(total) {
+  const dens = [50,20,10,5,2,1,0.50,0.20,0.10];
+  let rest = Math.round(total * 100);
+  let partes = [];
+  for (const d of dens) {
+    const dc = Math.round(d * 100);
+    const q = Math.floor(rest / dc);
+    if (q > 0) { rest -= q * dc; partes.push(`${q}×S/${Number.isInteger(d)?d:d.toFixed(2)}`); }
+  }
+  return partes.length ? '💡 ' + partes.join(' + ') : '';
+}
+
+function limpiarVuelto() {
+  document.getElementById('consumo-input').value = '';
+  document.getElementById('billete-input').value = '';
+  billeteActivo = null;
+  [20,50,100].forEach(v => {
+    const b = document.getElementById('bill-'+v);
+    if (b) { b.style.background=''; b.style.color=''; b.style.borderColor=''; }
+  });
+  document.getElementById('vuelto-label').textContent = 'Ingresa monto y billete';
+  document.getElementById('vuelto-amount').textContent = '';
+  document.getElementById('vuelto-desglose').textContent = '';
+}
+
+// ═══════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════
+let currentTab = 'efectivo';
+let vueltoOpen = false;
+
+function showTab(tab) {
+  if (vueltoOpen) closeVuelto();
+  currentTab = tab;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function toggleVuelto() {
+  vueltoOpen ? closeVuelto() : openVuelto();
+}
+
+function openVuelto() {
+  vueltoOpen = true;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-vuelto').classList.add('active');
+  const fab = document.getElementById('fab');
+  fab.classList.replace('mode-vuelto','mode-volver');
+  fab.querySelector('.fab-icon').textContent = '↩';
+  document.getElementById('fab-label').textContent = 'VOLVER';
+}
+
+function closeVuelto() {
+  vueltoOpen = false;
+  document.getElementById('screen-vuelto').classList.remove('active');
+  showTab(currentTab);
+  const fab = document.getElementById('fab');
+  fab.classList.replace('mode-volver','mode-vuelto');
+  fab.querySelector('.fab-icon').textContent = '🔁';
+  document.getElementById('fab-label').textContent = 'VUELTO';
+}
+
+// ═══════════════════════════════════
+// DETALLES HEADER
+// ═══════════════════════════════════
+function toggleDetails() {
+  const panel = document.getElementById('details-panel');
+  const btn   = document.getElementById('toggle-details');
+  panel.classList.toggle('open');
+  btn.textContent = panel.classList.contains('open') ? '▲ Ocultar' : '▼ Ver más';
+  updateHeaderHeight();
+}
+
+// ═══════════════════════════════════
+// HISTORIAL
+// ═══════════════════════════════════
+function toggleHistorial() {
+  const list = document.getElementById('historial-list');
+  list.classList.toggle('open');
+  renderHistorial();
+}
+
+// ═══════════════════════════════════
+// NUEVO TURNO
+// ═══════════════════════════════════
+let pendingAction = null;
+
+function pedirNuevoTurno() {
+  pendingAction = 'nuevo_turno';
+  document.getElementById('confirm-title').textContent = '¿Iniciar nuevo turno?';
+  document.getElementById('confirm-msg').textContent = 'Se borrarán todos los datos del turno actual. Genera el reporte antes si lo necesitas.';
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function cerrarConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  pendingAction = null;
+}
+
+function confirmarAccion() {
+  cerrarConfirm();
+  if (pendingAction === 'nuevo_turno') {
+    state = {
+      efectivo: 0, boveda: 0, yape: 0, f3Count: 0,
+      turnoInicio: Date.now(),
+      historial: [], yapeHistorial: [], bovedaHistorial: [],
+    };
+    saveState();
+    render();
+    showTab('efectivo');
+  }
+}
+
+// ═══════════════════════════════════
+// REPORTE HTML
+// ═══════════════════════════════════
+function generarReporte() {
+  const ahora = Date.now();
+  const enCaja = Math.max(0, state.efectivo - state.boveda);
+
+  const allMov = [
+    ...state.historial.map(i => ({...i, tipo:'Efectivo'})),
+    ...state.yapeHistorial.map(i => ({...i, tipo:'Yape/Culqi'})),
+    ...state.bovedaHistorial.map(i => ({...i, tipo:'Bóveda'}))
+  ].sort((a,b) => a.ts - b.ts);
+
+  const filas = allMov.length
+    ? allMov.map(m => `<tr>
+        <td>${fmtTime(m.ts)}</td>
+        <td>${m.tipo}</td>
+        <td style="text-align:right;font-weight:700;color:${m.monto>=0?'#a5d6a7':'#ef9a9a'}">${m.monto>=0?'+':''}${fmt(m.monto)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center;color:#888">Sin movimientos</td></tr>';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reporte de turno</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:16px;max-width:480px;margin:auto}
+h1{font-size:20px;font-weight:900;color:#f5a623;margin-bottom:4px}
+.sub{font-size:12px;color:#888;margin-bottom:20px}
+.card{background:#1e1e1e;border-radius:12px;padding:14px 16px;margin-bottom:12px;border:1px solid #333}
+.card-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.card-val{font-size:26px;font-weight:900}
+.cv-orange{color:#f5a623}.cv-purple{color:#b39ddb}.cv-blue{color:#4fc3f7}.cv-green{color:#a5d6a7}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;background:#252525;color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
+td{padding:8px 10px;border-bottom:1px solid #2a2a2a}
+tr:last-child td{border-bottom:none}
+.footer{font-size:11px;color:#555;text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<h1>🧾 Reporte de turno</h1>
+<div class="sub">Generado: ${fmtDateTime(ahora)}</div>
+
+<div class="card">
+  <div class="card-label">Inicio de turno</div>
+  <div style="font-size:16px;font-weight:700">${fmtDateTime(state.turnoInicio)}</div>
+</div>
+<div class="card">
+  <div class="card-label">Cierre de turno</div>
+  <div style="font-size:16px;font-weight:700">${fmtDateTime(ahora)}</div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Efectivo en caja</div>
+    <div class="card-val cv-orange">${fmt(enCaja)}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total vendido</div>
+    <div class="card-val cv-green">${fmt(state.efectivo + state.yape)}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Yape / Culqi</div>
+    <div class="card-val cv-purple">${fmt(state.yape)}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Depositado bóveda</div>
+    <div class="card-val cv-blue">${fmt(state.boveda)}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Cierres F3 en POS</div>
+  <div class="card-val">${state.f3Count}</div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <table>
+    <thead><tr><th>Hora</th><th>Tipo</th><th style="text-align:right">Monto</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+</div>
+
+<div class="footer">Caja Gasolinera — reporte automático</div>
+</body>
+</html>`;
+
+  try {
+    const blob = new Blob([html], {type:'text/html'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const d    = new Date(ahora);
+    const pad  = n => String(n).padStart(2,'0');
+    a.download = `turno-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.html`;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+  } catch(e) {
+    alert('No se pudo generar el reporte: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════
+// MICRO ANIMACIONES
+// ═══════════════════════════════════
+function pulse(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.transition = 'transform 0.1s';
+  el.style.transform  = 'scale(1.07)';
+  setTimeout(() => { el.style.transform = 'scale(1)'; }, 130);
+}
+
+function shake(el) {
+  el.style.borderColor = 'var(--danger)';
+  setTimeout(() => { el.style.borderColor = ''; }, 600);
+}
+
+// ═══════════════════════════════════
+// ENTER en inputs
+// ═══════════════════════════════════
+document.getElementById('efectivo-input').addEventListener('keydown', e => { if(e.key==='Enter') sumarEfectivo(); });
+document.getElementById('yape-input').addEventListener('keydown',     e => { if(e.key==='Enter') addYape(); });
+document.getElementById('boveda-input').addEventListener('keydown',   e => { if(e.key==='Enter') addBoveda(); });
+document.getElementById('billete-input').addEventListener('keydown',  e => { if(e.key==='Enter') calcularVuelto(); });
+document.getElementById('consumo-input').addEventListener('input', calcularVuelto);
+
+// ═══════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+requestPersist();
+loadState();
+if (!state.turnoInicio) {
+  state.turnoInicio = Date.now();
+  saveState();
+}
+render();
+updateHeaderHeight();
+window.addEventListener('resize', updateHeaderHeight);
+</script>
+</body>
+</html>
